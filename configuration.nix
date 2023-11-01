@@ -53,7 +53,7 @@
   users.users.iocanel = {
     isNormalUser = true;
     description = "Ioannis Canellos";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "podman" ];
     packages = with pkgs; [];
     openssh = {
       authorizedKeys = {
@@ -72,8 +72,11 @@
   environment.systemPackages = with pkgs; [
     neovim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     git
-    podman
     wget
+    podman
+    socat
+    nmap
+    inetutils
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -103,4 +106,19 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.05"; # Did you read the comment?
 
+  virtualisation = {
+    podman = {
+      enable = true;
+      dockerCompat = true;
+      defaultNetwork.settings = {
+        dns_enabled = true;
+      };
+    };
+  };
+
+  systemd.services.podman-remote = {
+    serviceConfig = {
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:2376,reuseaddr,fork,bind=0.0.0.0 UNIX-SOCKET:/var/run/podman/podman.sock";
+    };
+  };
 }
